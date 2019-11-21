@@ -55,6 +55,24 @@ class Items:
         except ValueError: # no items left
             return 'NoItemsLeft'
 
+    def heartbeat(self, id, ip):
+        """Logs heartbeat for item"""
+        try:
+            id = int(id) # Convert item to an integer
+            item = self.inprogress_items[id] # Get item from inprogress_items
+
+            if item['ip'] == ip: # Check if ip is the same as requester
+                # Set item heartbeat to now
+                self.inprogress_items[id]['times']['heartbeat'] = int(time.time())
+
+                return 'Success'
+
+            else:
+                return 'IpDoesNotMatch'
+
+        except KeyError:
+            return 'InvalidID'
+
     def finishitem(self, id, ip):
         """Gets an item in progress, and moves it to done_items"""
         try:

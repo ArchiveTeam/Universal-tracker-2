@@ -23,6 +23,21 @@ class start_item(tornado.web.RequestHandler):
 
         self.write(item) # Respond with the output from item_manager
 
+class heartbeat(tornado.web.RequestHandler):
+    """API endpoint for heartbeat"""
+
+    def get(self):
+        id = self.get_argument('id') # Get url parameter
+
+        # Tell item_manager to set heartbeat
+        heartbeat_stat = items.heartbeat(id, self.request.remote_ip)
+
+        # If there is an error setting heartbeat
+        if heartbeat_stat in ['IpDoesNotMatch', 'InvalidID']:
+            self.set_status(403) # return 403 forbidden
+
+        # Respond with the output from item_manager
+        self.write(str(heartbeat_stat))
 
 class finish_item(tornado.web.RequestHandler):
     """API endpoint for finishing an item"""
@@ -53,6 +68,7 @@ if __name__ == "__main__":
 
         # API urls
         (r'/item/get', start_item),
+        (r'/item/heartbeat', heartbeat),
         (r'/item/done', finish_item)
     ])
 
