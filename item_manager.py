@@ -63,6 +63,9 @@ class Items:
 
             if item['ip'] == ip: # Check if ip is the same as requester
                 self.inprogress_items.pop(id) # remove item from inprogress_items
+
+                item['times']['finishtime'] = int(time.time()) # Log finish time
+
                 self.done_items[id] = item # add item to done_items
 
                 print(f"{item['username']} finished {id}")
