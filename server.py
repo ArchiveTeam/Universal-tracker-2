@@ -2,6 +2,7 @@ import tornado.web
 import tornado.ioloop
 
 import item_manager
+import leaderboard
 
 
 class homepage(tornado.web.RequestHandler):
@@ -43,7 +44,9 @@ class finish_item(tornado.web.RequestHandler):
     """API endpoint for finishing an item"""
 
     def get(self):
-        id = self.get_argument('id') # Get url parameter
+        # Get url parameters
+        id = self.get_argument('id')
+        itemsize = int(self.get_argument('size'))
 
         # Tell item_manager to finish item
         done_stat = items.finishitem(id, self.request.remote_ip)
@@ -52,10 +55,22 @@ class finish_item(tornado.web.RequestHandler):
         if done_stat in ['IpDoesNotMatch', 'InvalidID']:
             self.set_status(403) # return 403 forbidden
 
-        self.write(str(done_stat)) # Respond with the output from item_manager
+        else:
+            # Add item to leaderboard
+            leaderboard.additem(done_stat[1], itemsize)
+
+        self.write(str(done_stat[0])) # Respond with the output from item_manager
+
+class get_leaderboard(tornado.web.RequestHandler):
+    """API endpoint for getting the leaderboard"""
+
+    def get(self):
+        # Return the leaderboard
+        self.write(leaderboard.get_leaderboard())
 
 
 items = item_manager.Items() # create items object
+leaderboard = leaderboard.Leaderboard() # create leaderboard object
 items.loadfile('items.txt') # Load items
 
 
@@ -69,7 +84,8 @@ if __name__ == "__main__":
         # API urls
         (r'/item/get', start_item),
         (r'/item/heartbeat', heartbeat),
-        (r'/item/done', finish_item)
+        (r'/item/done', finish_item),
+        (r'/api/leaderboard', get_leaderboard)
     ])
 
     app.listen(PORT) #start listening on PORT

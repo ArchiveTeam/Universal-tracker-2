@@ -87,7 +87,7 @@ class Items:
                 self.done_items[id] = item # add item to done_items
 
                 print(f"{item['username']} finished {id}")
-                return 'Success'
+                return ('Success', item['username'])
 
             else:
                 return 'IpDoesNotMatch'
