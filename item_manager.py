@@ -13,7 +13,7 @@ class Items:
         self.current_id = 0
 
     def loadfile(self, file):
-        # Open a csv file, and create one item per line
+        """Open a csv file, and create one item per line"""
 
         with open(file, 'r') as jf:
             for line in jf.readlines():
@@ -31,6 +31,28 @@ class Items:
                     }
 
                     self.current_id += 1 # Add one to the current id
+
+    def dumpfile(self):
+        """Save the current queue"""
+
+        values = []
+        value_str = ''
+
+        # Extract values
+        for key in self.queue_items:
+            values.append(self.queue_items[key]['values'])
+
+        for key in self.inprogress_items:
+            values.append(self.inprogress_items[key]['values'])
+
+        # Parse values into file
+        for value in values:
+            for arg in value:
+                value_str += f'{arg},' # Add value to line
+
+            value_str += '\n' # Add newline after every list of values
+
+        return value_str
 
     def getitem(self, username, ip):
         """Gets an item, and moves it to inprogress_items"""
@@ -52,7 +74,7 @@ class Items:
             # Return json of item
             return json.dumps({'id': item['id'], 'values': item['values']})
 
-        except ValueError: # no items left
+        except ValueError: # No items left
             return 'NoItemsLeft'
 
     def heartbeat(self, id, ip):
@@ -84,7 +106,7 @@ class Items:
 
                 item['times']['finishtime'] = int(time.time()) # Log finish time
 
-                self.done_items[id] = item # add item to done_items
+                self.done_items[id] = item # Add item to done_items
 
                 print(f"{item['username']} finished {id}")
                 return ('Success', item['username'])

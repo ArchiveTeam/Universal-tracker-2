@@ -1,0 +1,1 @@
+{"project-meta": {"name": "example2-grab", "slug": "Archiving example2.com before it's too late", "icon": "example2-grab.svg", "deadline": "No deadline", "items-folder": "example2-items"}, "project-status": {"public": false, "paused": false, "ratelimit": false}, "automation": {"auto-pause": {"enable": false, "urls": [["http://example.com", "200"]]}}}
