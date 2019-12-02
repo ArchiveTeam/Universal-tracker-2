@@ -2,9 +2,11 @@ import json
 import os
 
 import tornado.web
+import tornado.template
 import tornado.ioloop
 
 import project
+import auth
 
 
 class homepage(tornado.web.RequestHandler):
@@ -28,7 +30,7 @@ class start_item(tornado.web.RequestHandler):
 
             self.write(item) # Respond with the output from item_manager
 
-        except KeyError: # Project not fount
+        except KeyError: # Project not found
             self.set_status(404)
             self.write('InvalidProject')
 
@@ -83,24 +85,101 @@ class get_leaderboard(tornado.web.RequestHandler):
             # Return the leaderboard
             self.write(projects[project].get_leaderboard())
 
-        except KeyError: # Project not fount
+        except KeyError: # Project not found
             self.set_status(404)
             self.write('InvalidProject')
 
+class AdminHandler(tornado.web.RequestHandler):
+    """Base class for any admin page accept login"""
 
-# load projects
-projects = {}
+    def get_current_user(self):
+
+        # Return login cookie
+        return self.get_secure_cookie("user")
+
+class admin_login(tornado.web.RequestHandler):
+    """Account login function"""
+
+    def get(self):
+        msg = self.get_query_argument('msg', default=False)
+
+        # Render login form template
+        self.write(html_loader.load(
+                    'admin/login.html').generate(msg=msg))
+
+    def post(self):
+        # Get login form data
+        username = self.get_body_argument('username')
+        password = self.get_body_argument('password')
+
+        # Verify if login info is correct
+        if auth.verify(username, password) == True:
+            self.set_secure_cookie('user', username) # Set login cookie
+            self.redirect('/admin')
+
+        else:
+            # Upon error, redirect to login with error message
+            self.redirect("/admin/login?msg=Invalid%20username%20or%20password")
+
+class admin_logout(tornado.web.RequestHandler):
+    """Account logout function"""
+
+    @tornado.web.authenticated # Verify the user is logged in
+    def get(self):
+        self.clear_all_cookies() # Clear site cookies, and the login cookie.
+        self.redirect("/admin/login?msg=Logout%20success") # Redirect to login
+
+class admin(AdminHandler):
+    """Main admin page"""
+
+    @tornado.web.authenticated # Verify the user is logged in
+    def get(self):
+        # Render admin manage template
+        self.write(html_loader.load(
+                    'admin/manage.html').generate(projects=projects))
+
+
+class manage_project(AdminHandler):
+    """Manage project admin page"""
+
+    @tornado.web.authenticated # Verify the user is logged in
+    def get(self, project):
+        try:
+            # Render manage project template
+            self.write(html_loader.load(
+                    'admin/project.html').generate(project=projects[project]))
+
+        except KeyError: # Project not found
+            self.set_status(404)
+            self.write('InvalidProject')
+
+# Template loader object
+html_loader = tornado.template.Loader('templates')
+
+projects = {} # Dictionary of project objects
+
+auth = auth.Auth() # Authentication object
 
 for p in os.listdir('projects'):
     if p.endswith('.json') and not p.endswith('leaderboard.json'):
         with open(os.path.join('projects', p), 'r') as jf:
+
+            # Read project info
             project_name = json.loads(jf.read())['project-meta']['name']
 
+        # Create one project object for every project found
         projects[project_name] = project.Project(os.path.join('projects', p))
 
 
 if __name__ == "__main__":
     PORT = 80 # Set server port
+
+    # Settings for tornado server
+    settings = {
+        'compiled_template_cache': False,
+        'login_url': '/admin/login',
+        'cookie_secret': '4wqbnriugh94',
+    }
 
     # Create url paths
     app = tornado.web.Application([
@@ -111,7 +190,14 @@ if __name__ == "__main__":
         (r'/(.*?)/item/heartbeat', heartbeat),
         (r'/(.*?)/item/done', finish_item),
         (r'/(.*?)/api/leaderboard', get_leaderboard),
-    ])
+
+        # Admin
+        (r'/admin', admin),
+        (r'/admin/login', admin_login),
+        (r'/admin/logout', admin_logout),
+        (r'/admin/project/(.*?)', manage_project),
+    ], **settings,
+    )
 
     app.listen(PORT) #start listening on PORT
     print(f'Listening on {PORT}')
