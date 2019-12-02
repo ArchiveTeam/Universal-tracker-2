@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Tracker admin | login</title>
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+		<style>
+			.login {
+				max-width: 500px;
+				margin-top: 10vh;
+				padding-top: -4rem;
+			}
+			.login-title {
+				margin-top: 0px;
+			}
+			button {
+				width: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container login">
+			<div class="card-panel centered">
+				<h1 class="login-title">Login</h1>
+
+				<form action="" method="post">
+					<div class="input-field">
+						<i class="material-icons prefix text-blue">account_circle</i>
+						<input id="username" name="username" type="text" class="validate">
+						<label for="username">Username</label>
+					</div>
+
+					<div class="input-field">
+						<i class="material-icons prefix text-blue">lock</i>
+						<input id="password" name="password" type="password" class="validate">
+						<label for="password">Password</label>
+					</div>
+
+					<button type="submit" class="waves-effect waves-light btn-large blue">Login</button>
+				</form>
+			</div>
+		</div>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+		{% if msg %}
+		<script type="text/javascript">
+				M.toast({html: '{{ msg }}'})
+		</script>
+		{% end %}
+	</body>
+</html>

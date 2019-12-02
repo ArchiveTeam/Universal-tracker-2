@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Tracker admin | {% block title %}{% end %}</title>
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+		<link rel="shortcut-icon" href="https://www.archiveteam.org/images/f/f3/Archive_team.png">
+		<style>
+			/* Heading margin fixes */
+			h1 {margin-top: 0px; margin-bottom: 2rem;}
+			h2 {margin-top: 0px; margin-bottom: 2rem;}
+			h3 {margin-top: 0px; margin-bottom: 2rem;}
+			h4 {margin-top: 0px; margin-bottom: .5rem;}
+			h5 {margin-top: 0px; margin-bottom: 2rem;}
+			h6 {margin-top: 0px; margin-bottom: 2rem;}
+
+			/* Navbar fixes */
+			.navbar {margin-bottom: 3rem;}
+			.brand-logo {margin-left: 1rem;}
+
+			{% block css %}
+			{% end %}
+		</style>
+	</head>
+	<body>
+		<nav class="navbar">
+			<div class="nav-wrapper blue">
+				<a href="/admin" class="brand-logo">Tracker&nbsp;admin</a>
+				<ul class="right">
+					<li><a href="/admin/logout">Log out</a></li>
+				</ul>
+			</div>
+		</nav>
+
+		<div class="container">
+			<div class="card-panel centered">
+				{% block body %}
+				{% end %}
+			</div>
+		</div>
+
+		{% block fixed %}
+		{% end %}
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+		<script type="text/javascript">
+			document.addEventListener('DOMContentLoaded', function() {
+				var elems = document.querySelectorAll('.sidenav');
+				var instances = M.Sidenav.init(elems, options);
+			});
+		</script>
+	</body>
+</html>

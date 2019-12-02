@@ -1,0 +1,158 @@
+{% extends adminbase.html %}
+
+{% block title %}{{ project.meta['name'] }}{% end %}
+
+{% block css %}
+.btn { text-transform: none; }
+.project-img { height: 9rem; }
+.edit-wrapper {
+	display: flex;
+	justify-content: center;
+	margin-top: 4rem;
+}
+.download-wrapper {
+	margin-top: 4rem;
+	display: flex;
+	justify-content: center;
+}
+.download-wrapper .btn { margin-left: 1rem; }
+.project-edit {
+	min-width: 50vh;
+	width: 50%;
+}
+.edit-row { margin-top: -1rem; }
+.edit-row.lessmargin>.col { margin-top: -2rem; }
+.edit-row.moremargin>.col { margin-top: 1rem; }
+.project-save { width: 100%; }
+.project-img { height: 6rem; }
+.btn-floating>i { font-size: 2rem; }
+{% end %}
+
+{% block body %}
+<div class="row">
+	<div class="col">
+		<img class="project-img" src="https://via.placeholder.com/256x256">
+	</div>
+	<div class="col">
+		<h1>{{ project.meta['name'] }}</h1>
+		<a href="#" class="btn waves-effect waves-light blue">Manage items</a>
+		<a href="#" class="btn waves-effect waves-light blue">Manage bans</a>
+		<a href="#" class="btn waves-effect waves-light blue">Tracker logs</a>
+	</div>
+</div>
+
+<div class="edit-wrapper">
+
+	<form class="project-edit" action="" method="post">
+
+		<h4>&nbsp;Edit project:</h4>
+
+		<div class="row edit-row">
+			<div class="col">
+				<b>Rename project:</b>
+				<div class="input-field inline">
+					<input id="rename" type="text" class="validate">
+					<label for="rename">New project name</label>
+				</div>
+			</div>
+		</div>
+
+		<div class="row edit-row lessmargin">
+			<div class="col">
+				<b>Edit slug:</b>
+				<div class="input-field inline">
+					<input id="editslug" type="text" class="validate">
+					<label for="editslug">New project slug</label>
+				</div>
+			</div>
+		</div>
+
+		<div class="row edit-row lessmargin">
+			<div class="col">
+				<b>Edit icon:</b>
+				<div class="input-field inline">
+					<input id="editicon" type="url" class="validate">
+					<label for="editicon">New project icon url</label>
+				</div>
+			</div>
+		</div>
+
+		<div class="row edit-row lessmargin">
+			<div class="col">
+				<b>Rate limit:</b>
+				<div class="input-field inline">
+					<input id="ratelimit" type="number" min="-1" class="validate">
+					<label for="ratelimit">Rate limit</label>
+				</div>
+				<b>/m</b>
+				(-1 for no limit)
+			</div>
+		</div>
+
+		<div class="row edit-row lessmargin">
+			<div class="col">
+				<b>Minimum version:</b>
+				<div class="input-field inline">
+					<input id="version" type="text" class="validate">
+					<label for="version">Version</label>
+				</div>
+			</div>
+		</div>
+
+		<div class="row edit-row">
+			<div class="col">
+				<b>Pause project:</b>
+			</div>
+			<div class="col">
+				<div class="switch">
+					<label>
+						Off
+						<input type="checkbox">
+						<span class="lever"></span>
+						On
+					</label>
+				</div>
+			</div>
+		</div>
+
+		<div class="row edit-row moremargin">
+			<div class="col">
+				<b>Private project:</b>
+			</div>
+			<div class="col">
+				<div class="switch">
+					<label>
+						Off
+						<input type="checkbox">
+						<span class="lever"></span>
+						On
+					</label>
+				</div>
+			</div>
+		</div>
+
+		<b>&nbsp;&nbsp;&nbsp;Rsync targets:</b>
+		One per line, use {d} for downloader.
+		<div class="input-field col s12">
+			<textarea id="rsync" class="materialize-textarea"></textarea>
+			<label for="rsync">Rsync targets</label>
+		</div>
+
+		<div class="col">
+			<button class="waves-effect waves-light btn blue project-save" type="submit">Save</button>
+		</div>
+
+	</form>
+
+</div>
+
+<div class="download-wrapper">
+	<ul class="center-align">
+		<li><h4>&nbsp;Download data:</h4></li>
+		<li>
+			<a href="#" class="btn waves-effect waves-light blue">Leaderboard</a>
+			<a href="#" class="btn waves-effect waves-light blue">Done items</a>
+		</li>
+	</ul>
+</div>
+{% end %}

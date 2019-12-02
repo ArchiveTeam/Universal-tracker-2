@@ -1,0 +1,45 @@
+{% extends adminbase.html %}
+
+{% block title %}projects{% end %}
+
+{% block css %}
+.project-card {
+	height: 7rem;
+	padding: 0px;
+	padding-top: 0.5rem;
+}
+.project-img {
+	height: 6rem;
+}
+.btn-floating>i {
+	font-size: 2rem;
+}
+{% end %}
+
+{% block body %}
+<h3 class="center-align">Projects</h3>
+
+{% for project in projects %}
+<a href="/admin/project/{{ project }}">
+	<div class="card-panel hoverable centered project-card">
+		<div class="row">
+			<div class="col">
+				<img class="project-img" src="{{ projects[project].meta['icon'] }}">
+			</div>
+			<div class="col s5">
+				<h4 class="black-text">{{ project }}</h4>
+			</div>
+		</div>
+	</div>
+</a>
+{% end %}
+
+{% end %}
+
+{% block fixed %}
+<div class="fixed-action-btn">
+	<a class="btn-floating btn-large blue" title="Add project">
+		<i class="large material-icons">add</i>
+	</a>
+</div>
+{% end %}
