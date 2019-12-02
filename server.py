@@ -4,8 +4,6 @@ import os
 import tornado.web
 import tornado.ioloop
 
-import item_manager
-import leaderboard
 import project
 
 
