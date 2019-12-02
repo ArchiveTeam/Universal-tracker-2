@@ -178,7 +178,7 @@ if __name__ == "__main__":
     settings = {
         'compiled_template_cache': False,
         'login_url': '/admin/login',
-        'cookie_secret': '4wqbnriugh94',
+        'cookie_secret': 'CHANGEME',
     }
 
     # Create url paths
