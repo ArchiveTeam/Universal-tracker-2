@@ -90,7 +90,7 @@ class get_leaderboard(tornado.web.RequestHandler):
             self.write('InvalidProject')
 
 class AdminHandler(tornado.web.RequestHandler):
-    """Base class for any admin page accept login"""
+    """Base class for any admin page except login"""
 
     def get_current_user(self):
 
@@ -121,7 +121,7 @@ class admin_login(tornado.web.RequestHandler):
             # Upon error, redirect to login with error message
             self.redirect("/admin/login?msg=Invalid%20username%20or%20password")
 
-class admin_logout(tornado.web.RequestHandler):
+class admin_logout(AdminHandler):
     """Account logout function"""
 
     @tornado.web.authenticated # Verify the user is logged in
