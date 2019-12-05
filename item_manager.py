@@ -7,7 +7,6 @@ class Items:
     def __init__(self):
         self.queue_items = {}
         self.inprogress_items = {}
-        self.done_items = {}
 
         # Assign only one id per item
         self.current_id = 0
@@ -96,17 +95,13 @@ class Items:
             return 'InvalidID'
 
     def finishitem(self, id, ip):
-        """Gets an item in progress, and moves it to done_items"""
+        """Removes item from inprogress_items"""
         try:
             id = int(id) # Convert item to an integer
             item = self.inprogress_items[id] # Get item from inprogress_items
 
             if item['ip'] == ip: # Check if ip is the same as requester
                 self.inprogress_items.pop(id) # remove item from inprogress_items
-
-                item['times']['finishtime'] = int(time.time()) # Log finish time
-
-                self.done_items[id] = item # Add item to done_items
 
                 print(f"{item['username']} finished {id}")
                 return ('Success', item['username'])

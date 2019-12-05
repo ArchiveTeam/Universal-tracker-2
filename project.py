@@ -50,8 +50,6 @@ class Project:
             with open(os.path.join(self.items_folder, '.queue-save.txt'), 'w') as f:
                 f.write(self.items.dumpfile())
 
-            ## TODO: Save done_items
-
             # Save leaderboard
             with open(os.path.join('projects', f"{self.meta['name']}-leaderboard.json"), 'w') as ljf:
                 ljf.write(self.leaderboard.get_leaderboard())
