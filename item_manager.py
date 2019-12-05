@@ -7,6 +7,7 @@ class Items:
     def __init__(self):
         self.queue_items = {}
         self.inprogress_items = {}
+        self.done_items = 0
 
         # Assign only one id per item
         self.current_id = 0
@@ -102,6 +103,7 @@ class Items:
 
             if item['ip'] == ip: # Check if ip is the same as requester
                 self.inprogress_items.pop(id) # remove item from inprogress_items
+                self.done_items += 1 # Keep track of total number of items finished
 
                 print(f"{item['username']} finished {id}")
                 return ('Success', item['username'])
