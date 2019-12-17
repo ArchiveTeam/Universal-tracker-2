@@ -50,6 +50,7 @@ class Items:
             for arg in value:
                 value_str += f'{arg},' # Add value to line
 
+            value_str = value_str.rstrip(',') # Remove trailing ',' from line
             value_str += '\n' # Add newline after every list of values
 
         return value_str
