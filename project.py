@@ -24,7 +24,12 @@ class Project:
 
         # Get item files
         self.items_folder = os.path.join('projects', self.meta['items-folder'])
-        self.item_files = os.listdir(self.items_folder)
+        self.item_files = []
+        
+        for file in os.listdir(self.items_folder):
+            if file.endswith('.txt'):
+                self.item_files.append(file)
+
         self.item_files.sort()
 
         if not self.status['paused']: # If not paused
