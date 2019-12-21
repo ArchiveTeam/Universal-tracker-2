@@ -1,167 +1,105 @@
 import json
 import os
 
-import tornado.web
-import tornado.template
-import tornado.ioloop
+from sanic import Sanic
+from sanic import response
 
 import project
 import auth
 
+app = Sanic()
 
-class homepage(tornado.web.RequestHandler):
-    """This will eventually serve the tracker homepage"""
-
-    def get(self, x='testing.'):
-        self.write(f'Hello World, {x}')
-
-class start_item(tornado.web.RequestHandler):
+@app.route('<project>/item/get')
+async def get_item(request, project):
     """API endpoint for requesting an item"""
 
-    def get(self, project):
-        username = self.get_argument('username') # Get url parameter
+    try:
+        username = request.args['username'][0] # Get username
 
-        try:
-            # Get item from the project's item_manager
-            item = projects[project].get_item(username, self.request.remote_ip)
+    except KeyError:
+        return response.html('InvalidParams', status=400)
 
-            if item == 'NoItemsLeft':
-                self.set_status(404)
+    try:
+        # Get item from the project's item_manager
+        item = projects[project].get_item(username, request.ip)
 
-            self.write(item) # Respond with the output from item_manager
-
-        except KeyError: # Project not found
-            self.set_status(404)
-            self.write('InvalidProject')
-
-class heartbeat(tornado.web.RequestHandler):
-    """API endpoint for heartbeat"""
-
-    def get(self, project):
-        id = self.get_argument('id') # Get url parameter
-
-        try:
-            # Tell project's item_manager to set heartbeat
-            heartbeat_stat = projects[project].heartbeat(id, self.request.remote_ip)
-
-            # If there is an error setting heartbeat
-            if heartbeat_stat in ['IpDoesNotMatch', 'InvalidID']:
-                self.set_status(403) # return 403 forbidden
-
-            # Respond with the output from item_manager
-            self.write(str(heartbeat_stat))
-
-        except KeyError: # Project not fount
-            self.set_status(404)
-            self.write('InvalidProject')
-
-class finish_item(tornado.web.RequestHandler):
-    """API endpoint for finishing an item"""
-
-    def get(self, project):
-        # Get url parameters
-        id = self.get_argument('id')
-        itemsize = int(self.get_argument('size'))
-
-        try:
-            # Tell item_manager to finish item
-            done_stat = projects[project].finish_item(id, itemsize, self.request.remote_ip)
-
-            # If there is an error finishing item
-            if done_stat in ['IpDoesNotMatch', 'InvalidID']:
-                self.set_status(403) # return 403 forbidden
-
-            self.write(str(done_stat)) # Respond with the output from item_manager
-
-        except KeyError: # Project not fount
-            self.set_status(404)
-            self.write('InvalidProject')
-
-class get_leaderboard(tornado.web.RequestHandler):
-    """API endpoint for getting the leaderboard"""
-
-    def get(self, project):
-        try:
-            # Return the leaderboard
-            self.write(projects[project].get_leaderboard())
-
-        except KeyError: # Project not found
-            self.set_status(404)
-            self.write('InvalidProject')
-
-class AdminHandler(tornado.web.RequestHandler):
-    """Base class for any admin page except login"""
-
-    def get_current_user(self):
-
-        # Return login cookie
-        return self.get_secure_cookie("user")
-
-class admin_login(tornado.web.RequestHandler):
-    """Account login function"""
-
-    def get(self):
-        msg = self.get_query_argument('msg', default=False)
-
-        # Render login form template
-        self.write(html_loader.load(
-                    'admin/login.html').generate(msg=msg))
-
-    def post(self):
-        # Get login form data
-        username = self.get_body_argument('username')
-        password = self.get_body_argument('password')
-
-        # Verify if login info is correct
-        if auth.verify(username, password) == True:
-            self.set_secure_cookie('user', username) # Set login cookie
-            self.redirect('/admin')
+        if item == 'NoItemsLeft':
+            return response.text('NoItemsLeft', status=404)
 
         else:
-            # Upon error, redirect to login with error message
-            self.redirect("/admin/login?msg=Invalid%20username%20or%20password")
+            return response.text(item) # Respond with the output from item_manager
 
-class admin_logout(AdminHandler):
-    """Account logout function"""
+    except KeyError: # Project not found
+        return response.text('InvalidProject', status=404)
 
-    @tornado.web.authenticated # Verify the user is logged in
-    def get(self):
-        self.clear_all_cookies() # Clear site cookies, and the login cookie.
-        self.redirect("/admin/login?msg=Logout%20success") # Redirect to login
+@app.route('<project>/item/heartbeat')
+async def heartbeat(request, project):
+    try:
+        id = request.args['id'] # Get item ID
 
-class admin(AdminHandler):
-    """Main admin page"""
+    except KeyError:
+        return response.text('InvalidParams', status=400)
 
-    @tornado.web.authenticated # Verify the user is logged in
-    def get(self):
-        # Render admin manage template
-        self.write(html_loader.load(
-                    'admin/manage.html').generate(projects=projects))
+    try:
+        # Tell project's item_manager to set heartbeat
+        print(request.args['id'][0], request.ip)
+        heartbeat_stat = projects[project].heartbeat(request.args['id'][0], request.ip)
 
+        # If there is an error setting heartbeat
+        if heartbeat_stat == 'IpDoesNotMatch':
+            return response.text('IpDoesNotMatch', status=403)
 
-class manage_project(AdminHandler):
-    """Manage project admin page"""
+        elif heartbeat_stat == 'InvalidID':
+            return response.text('InvalidID', status=404)
 
-    @tornado.web.authenticated # Verify the user is logged in
-    def get(self, project):
-        try:
-            # Render manage project template
-            self.write(html_loader.load(
-                    'admin/project.html').generate(project=projects[project]))
+        else:
+            # Respond with the output from item_manager
+            return response.text(str(heartbeat_stat))
 
-        except KeyError: # Project not found
-            self.set_status(404)
-            self.write('InvalidProject')
+    except KeyError: # Project not found
+        return response.text('InvalidProject', status=404)
 
-# Template loader object
-html_loader = tornado.template.Loader('templates')
+@app.route('<project>/item/done')
+async def finish_item(request, project):
+    try:
+        id = request.args['id'][0] # Get item ID
+        itemsize = int(request.args['size'][0]) # Get item size
+
+    except (KeyError, ValueError):
+        return response.text('InvalidParams', status=400)
+
+    try:
+        # Tell item_manager to finish item
+        done_stat = projects[project].finish_item(id, itemsize, request.ip)
+
+        # If there is an error finishing item
+        if done_stat == 'IpDoesNotMatch':
+            return response.text('IpDoesNotMatch', status=403)
+
+        elif done_stat == 'InvalidID':
+            return response.text('InvalidID', status=404)
+
+        else:
+            # Respond with the output from item_manager
+            return response.text(str(done_stat))
+
+    except KeyError: # Project not found
+        return response.text('InvalidProject', status=404)
+
+@app.route('<project>/api/leaderboard')
+async def get_leaderboard(request, project):
+    try:
+        # Return the leaderboard
+        return response.text(projects[project].get_leaderboard())
+
+    except KeyError: # Project not found
+        return response.text('InvalidProject', status=404)
+
 
 projects = {} # Dictionary of project objects
 
-auth = auth.Auth() # Authentication object
-
 for p in os.listdir('projects'):
-    if p.endswith('.json') and not p.endswith('leaderboard.json'):
+    if p.endswith('.json') and not p.endswith('-leaderboard.json') and not p.endswith('-data.json'):
         with open(os.path.join('projects', p), 'r') as jf:
 
             # Read project info
@@ -170,35 +108,105 @@ for p in os.listdir('projects'):
         # Create one project object for every project found
         projects[project_name] = project.Project(os.path.join('projects', p))
 
-
 if __name__ == "__main__":
-    PORT = 80 # Set server port
+    app.run(host="0.0.0.0", port=8000, workers=4) ## TODO: Use settings file
 
-    # Settings for tornado server
-    settings = {
-        'compiled_template_cache': False,
-        'login_url': '/admin/login',
-        'cookie_secret': 'CHANGEME',
-    }
 
-    # Create url paths
-    app = tornado.web.Application([
-        (r'/', homepage),
+## TODO: Port admin functions
 
-        # API urls
-        (r'/(.*?)/item/get', start_item),
-        (r'/(.*?)/item/heartbeat', heartbeat),
-        (r'/(.*?)/item/done', finish_item),
-        (r'/(.*?)/api/leaderboard', get_leaderboard),
-
-        # Admin
-        (r'/admin', admin),
-        (r'/admin/login', admin_login),
-        (r'/admin/logout', admin_logout),
-        (r'/admin/project/(.*?)', manage_project),
-    ], **settings,
-    )
-
-    app.listen(PORT) #start listening on PORT
-    print(f'Listening on {PORT}')
-    tornado.ioloop.IOLoop.current().start() # Start server
+# class AdminHandler(tornado.web.RequestHandler):
+#     """Base class for any admin page except login"""
+#
+#     def get_current_user(self):
+#
+#         # Return login cookie
+#         return self.get_secure_cookie("user")
+#
+# class admin_login(tornado.web.RequestHandler):
+#     """Account login function"""
+#
+#     def get(self):
+#         msg = self.get_query_argument('msg', default=False)
+#
+#         # Render login form template
+#         self.write(html_loader.load(
+#                     'admin/login.html').generate(msg=msg))
+#
+#     def post(self):
+#         # Get login form data
+#         username = self.get_body_argument('username')
+#         password = self.get_body_argument('password')
+#
+#         # Verify if login info is correct
+#         if auth.verify(username, password) == True:
+#             self.set_secure_cookie('user', username) # Set login cookie
+#             self.redirect('/admin')
+#
+#         else:
+#             # Upon error, redirect to login with error message
+#             self.redirect("/admin/login?msg=Invalid%20username%20or%20password")
+#
+# class admin_logout(AdminHandler):
+#     """Account logout function"""
+#
+#     @tornado.web.authenticated # Verify the user is logged in
+#     def get(self):
+#         self.clear_all_cookies() # Clear site cookies, and the login cookie.
+#         self.redirect("/admin/login?msg=Logout%20success") # Redirect to login
+#
+# class admin(AdminHandler):
+#     """Main admin page"""
+#
+#     @tornado.web.authenticated # Verify the user is logged in
+#     def get(self):
+#         # Render admin manage template
+#         self.write(html_loader.load(
+#                     'admin/manage.html').generate(projects=projects))
+#
+#
+# class manage_project(AdminHandler):
+#     """Manage project admin page"""
+#
+#     @tornado.web.authenticated # Verify the user is logged in
+#     def get(self, project):
+#         try:
+#             # Render manage project template
+#             self.write(html_loader.load(
+#                     'admin/project.html').generate(project=projects[project]))
+#
+#         except KeyError: # Project not found
+#             self.set_status(404)
+#             self.write('InvalidProject')
+#
+# # Template loader object
+# html_loader = tornado.template.Loader('templates')
+#
+# auth = auth.Auth() # Authentication object
+#
+# if __name__ == "__main__":
+#     PORT = 80 # Set server port
+#
+#     # Settings for tornado server
+#     settings = {
+#         'compiled_template_cache': False,
+#         'login_url': '/admin/login',
+#         'cookie_secret': 'CHANGEME',
+#     }
+#
+#     # Create url paths
+#     app = tornado.web.Application([
+#         (r'/', homepage),
+#
+#         # API urls
+#         (r'/(.*?)/item/get', start_item),
+#         (r'/(.*?)/item/heartbeat', heartbeat),
+#         (r'/(.*?)/item/done', finish_item),
+#         (r'/(.*?)/api/leaderboard', get_leaderboard),
+#
+#         # Admin
+#         (r'/admin', admin),
+#         (r'/admin/login', admin_login),
+#         (r'/admin/logout', admin_logout),
+#         (r'/admin/project/(.*?)', manage_project),
+#     ], **settings,
+#     )
