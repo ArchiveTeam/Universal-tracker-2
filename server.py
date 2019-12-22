@@ -17,28 +17,34 @@ async def get_item(request, project):
         username = request.args['username'][0] # Get username
 
     except KeyError:
-        return response.html('InvalidParams', status=400)
+        return response.json({'error': 'InvalidParams'}, status=400)
 
     try:
         # Get item from the project's item_manager
         item = projects[project].get_item(username, request.ip)
 
         if item == 'NoItemsLeft':
-            return response.text('NoItemsLeft', status=404)
+            return response.json({'error': 'NoItemsLeft'}, status=404)
+
+        elif item == 'ProjectNotActive':
+            return response.json({'error': 'ProjectNotActive'}, status=404)
 
         else:
-            return response.text(item) # Respond with the output from item_manager
+            # Respond with the output from item_manager
+            return response.json(item, escape_forward_slashes=False)
 
     except KeyError: # Project not found
-        return response.text('InvalidProject', status=404)
+        return response.json({'error': 'InvalidProject'}, status=404)
 
 @app.route('<project>/item/heartbeat')
 async def heartbeat(request, project):
+    """API endpoint for heartbeat"""
+
     try:
         id = request.args['id'] # Get item ID
 
     except KeyError:
-        return response.text('InvalidParams', status=400)
+        return response.json({'error': 'InvalidParams'}, status=400)
 
     try:
         # Tell project's item_manager to set heartbeat
@@ -47,26 +53,28 @@ async def heartbeat(request, project):
 
         # If there is an error setting heartbeat
         if heartbeat_stat == 'IpDoesNotMatch':
-            return response.text('IpDoesNotMatch', status=403)
+            return response.json({'error': 'IpDoesNotMatch'}, status=403)
 
         elif heartbeat_stat == 'InvalidID':
-            return response.text('InvalidID', status=404)
+            return response.json({'error': 'InvalidID'}, status=404)
 
         else:
             # Respond with the output from item_manager
-            return response.text(str(heartbeat_stat))
+            return response.json({'status': str(heartbeat_stat)})
 
     except KeyError: # Project not found
-        return response.text('InvalidProject', status=404)
+        return response.json({'error': 'InvalidProject'}, status=404)
 
 @app.route('<project>/item/done')
 async def finish_item(request, project):
+    """API endpoint for finishing an item"""
+
     try:
         id = request.args['id'][0] # Get item ID
         itemsize = int(request.args['size'][0]) # Get item size
 
     except (KeyError, ValueError):
-        return response.text('InvalidParams', status=400)
+        return response.json({'error': 'InvalidParams'}, status=400)
 
     try:
         # Tell item_manager to finish item
@@ -74,26 +82,28 @@ async def finish_item(request, project):
 
         # If there is an error finishing item
         if done_stat == 'IpDoesNotMatch':
-            return response.text('IpDoesNotMatch', status=403)
+            return response.json({'error': 'IpDoesNotMatch'}, status=403)
 
         elif done_stat == 'InvalidID':
-            return response.text('InvalidID', status=404)
+            return response.json({'error': 'InvalidID'}, status=404)
 
         else:
             # Respond with the output from item_manager
-            return response.text(str(done_stat))
+            return response.json({'status': str(done_stat)})
 
     except KeyError: # Project not found
-        return response.text('InvalidProject', status=404)
+        return response.json({'error': 'InvalidProject'}, status=404)
 
 @app.route('<project>/api/leaderboard')
 async def get_leaderboard(request, project):
+    """API endpoint for getting the leaderboard"""
+    
     try:
         # Return the leaderboard
-        return response.text(projects[project].get_leaderboard())
+        return response.json(projects[project].get_leaderboard())
 
     except KeyError: # Project not found
-        return response.text('InvalidProject', status=404)
+        return response.json({'error': 'InvalidProject'}, status=404)
 
 
 projects = {} # Dictionary of project objects

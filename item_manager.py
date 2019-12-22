@@ -73,7 +73,7 @@ class Items:
             print(f'giving id {id} to {username}')
 
             # Return json of item
-            return json.dumps({'id': item['id'], 'values': item['values']})
+            return {'id': item['id'], 'values': item['values']}
 
         except ValueError: # No items left
             return 'NoItemsLeft'

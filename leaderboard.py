@@ -24,7 +24,7 @@ class Leaderboard:
     def get_leaderboard(self):
         """return the entire leaderboard"""
 
-        return json.dumps(self.usernames)
+        return self.usernames
 
     def loadfile(filepath):
         """Get leaderboard stats from save file"""
