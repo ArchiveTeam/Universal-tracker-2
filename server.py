@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 from sanic import Sanic
 from sanic import response
@@ -15,6 +16,11 @@ async def get_item(request, project):
 
     try:
         username = request.args['username'][0] # Get username
+
+        # Make sure username is under 24 characters and only contains
+        # a-b, A-B, 0-9, and underscore.
+        if not re.match('^\w{3,24}$', username):
+            return response.json({'error': 'InvalidUsername'}, status=400)
 
     except KeyError:
         return response.json({'error': 'InvalidParams'}, status=400)
@@ -97,7 +103,7 @@ async def finish_item(request, project):
 @app.route('<project>/api/leaderboard')
 async def get_leaderboard(request, project):
     """API endpoint for getting the leaderboard"""
-    
+
     try:
         # Return the leaderboard
         return response.json(projects[project].get_leaderboard())
