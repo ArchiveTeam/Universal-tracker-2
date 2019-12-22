@@ -1,5 +1,7 @@
 import json
 
+import re
+
 from passlib.hash import argon2
 
 class Auth:
@@ -22,6 +24,9 @@ class Auth:
 
     def newacct(self, username, password):
         """Creates an account"""
+
+        if not re.match('^\w{3,24}$', username):
+            return 'InvalidName'
 
         if username.lower() in self.accounts: # Check if username already exists
             return 'AcctExists'
