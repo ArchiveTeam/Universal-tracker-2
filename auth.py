@@ -11,6 +11,7 @@ import toml
 
 class Auth:
     def __init__(self):
+        self.config = toml.load('config.toml')
 
         try:
             with open('admins.json', 'r') as jf:
@@ -145,10 +146,29 @@ class Auth:
 
                 else:
                     # If session expired, remove the token.
-                    self.accounts[username.lower()]['sessions'].pop(session)
-                    self.saveaccounts()
+                    self.delete_session(username.lower(), signed_session)
 
                     return 'InvalidSession'
+
+            except (BadSignature, KeyError):
+                return 'InvalidSession'
+
+        else:
+            return 'InvalidAcct'
+
+    def delete_session(self, username, signed_session):
+        """Delete a login session token"""
+
+        if username.lower() in self.accounts: # Verify that username is correct
+            try:
+                # Unsign the session cookie
+                session = self.signer.unsign(signed_session).decode('utf-8')
+
+                # Remove the token.
+                self.accounts[username.lower()]['sessions'].pop(session)
+                self.saveaccounts()
+
+                return 'Success'
 
             except (BadSignature, KeyError):
                 return 'InvalidSession'
