@@ -4,9 +4,12 @@ import re
 
 from sanic import Sanic
 from sanic import response
+import toml
 
 import project
 import auth
+
+config = toml.load('config.toml')
 
 app = Sanic()
 
@@ -125,7 +128,7 @@ for p in os.listdir('projects'):
         projects[project_name] = project.Project(os.path.join('projects', p))
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, workers=4) ## TODO: Use settings file
+    app.run(host=config['host'], port=config['port'], workers=config['workers'])
 
 
 ## TODO: Port admin functions

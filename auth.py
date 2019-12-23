@@ -1,15 +1,17 @@
 import secrets
 import time
 import json
-
 import re
 
 from passlib.hash import argon2
 from itsdangerous import Signer
 from itsdangerous.exc import BadSignature
+import toml
+
 
 class Auth:
     def __init__(self):
+
         try:
             with open('admins.json', 'r') as jf:
 
@@ -19,7 +21,7 @@ class Auth:
         except FileNotFoundError:
             self.accounts = {}
 
-        self.signer = Signer("secret-key")
+        self.signer = Signer(self.config['secret_key'])
 
     def saveaccounts(self):
         """Saves accounts to disk"""
@@ -107,7 +109,8 @@ class Auth:
         """Create a login session token"""
 
         session = secrets.token_urlsafe(64) # Generate session token
-        expire = round(time.time()) + 86400*30 # Expire 30 days in the future
+        # Expire x days in the future
+        expire = round(time.time()) + 86400*self.config['session_expire']
 
         # Make sure username is under 24 characters and only contains
         # a-b, A-B, 0-9, and underscore.
