@@ -87,34 +87,67 @@ class Database:
 
         return int(record[0])
 
+    async def create_account(self, username, hash):
+        await self.conn.execute("""
+            INSERT INTO accounts (username, password_hash)
+            VALUES($1, $2);
+        """, username, hash)
+
+    async def get_hash(self, username):
+        record = await self.conn.fetchrow("""
+            SELECT password_hash FROM accounts
+            WHERE username = $1;
+        """, username)
+
+        return str(record[0])
+
+    async def change_password(self, username, newpass):
+        await self.conn.execute("""
+            UPDATE accounts
+            SET password_hash = $1
+            WHERE username = $2;
+        """, newpass, username)
+
+    async def delete_account(self, username):
+        await self.conn.execute("""
+            DELETE FROM accounts
+            WHERE username = $1;
+        """, username)
+
+
 async def async_test():
     """Very ugly test to use while getting this working"""
+
     print('Connecting to db')
-
     db = Database()
-
     await db.connect(user='postgres', password='12345',
                 database='tracker', host='localhost')
 
-    print('testing db.new_project')
+    print('Removing old data')
+    await db.conn.execute("""
+        DELETE FROM sessions;
+        DELETE FROM accounts;
+        DELETE FROM handouts;
+        DELETE FROM items;
+        DELETE FROM projects;
+        ALTER SEQUENCE items_id_seq RESTART WITH 1;
+    """)
 
+    print('testing db.new_project')
     await db.new_project('test')
 
     print('testing db.queue_item')
-
     for i in range(1000):
         await db.queue_item('test', i)
 
     out_items = []
 
     print('testing db.get_item')
-
     for i in range(250):
         item = await db.get_item('test', 'LowLevel_M', 'testver')
         out_items.append(item)
 
     print('testing db.count_items')
-
     print(await db.count_items('test', 'handed_out'))
 
     print('testing db.heartbeat')
@@ -123,9 +156,22 @@ async def async_test():
             await db.heartbeat(i[1])
 
     print('testing db.set_handout_status')
-
     for i in out_items:
         await db.set_handout_status(i[1], 'succeeded')
+
+    print('testing db.create_account')
+    await db.create_account('LowLevel_M', 'TestHash')
+
+    print('testing db.get_hash')
+    print(await db.get_hash('LowLevel_M'))
+
+    print('testing db.change_password')
+    print('Oldpass:', await db.get_hash('LowLevel_M'))
+    await db.change_password('LowLevel_M', 'NewTestHash')
+    print('Newpass:', await db.get_hash('LowLevel_M'))
+
+    print('testing db.delete_account')
+    await db.delete_account('LowLevel_M')
 
 
 asyncio.run(async_test())
