@@ -151,44 +151,44 @@ async def async_test():
         ALTER SEQUENCE items_id_seq RESTART WITH 1;
     """)
 
-    print('testing db.new_project')
+    print('Testing db.new_project')
     await db.new_project('test')
 
-    print('testing db.queue_item')
+    print('Testing db.queue_item')
     for i in range(1000):
         await db.queue_item('test', i)
 
     out_items = []
 
-    print('testing db.get_item')
+    print('Testing db.get_item')
     for i in range(250):
         item = await db.get_item('test', 'LowLevel_M', 'testver')
         out_items.append(item)
 
-    print('testing db.count_items')
+    print('Testing db.count_items')
     print(await db.count_items('test', 'handed_out'))
 
-    print('testing db.heartbeat')
+    print('Testing db.heartbeat')
     for i in out_items:
         if random.randrange(5) == 3:
             await db.heartbeat(i[1])
 
-    print('testing db.set_handout_status')
+    print('Testing db.set_handout_status')
     for i in out_items:
         await db.set_handout_status(i[1], 'succeeded')
 
-    print('testing db.create_account')
+    print('Testing db.create_account')
     await db.create_account('LowLevel_M', 'TestHash')
 
-    print('testing db.get_hash')
+    print('Testing db.get_hash')
     print(await db.get_hash('LowLevel_M'))
 
-    print('testing db.change_password')
+    print('Testing db.change_password')
     print('Oldpass:', await db.get_hash('LowLevel_M'))
     await db.change_password('LowLevel_M', 'NewTestHash')
     print('Newpass:', await db.get_hash('LowLevel_M'))
 
-    print('testing db.delete_account')
+    print('Testing db.delete_account')
     await db.delete_account('LowLevel_M')
 
 if __name__ == '__main__':
