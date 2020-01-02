@@ -7,10 +7,12 @@ import asyncpg
 
 class Database:
     async def connect(self, **kwargs):
+        """Connect to a database"""
         self.conn = await asyncpg.connect(**kwargs)
 
     async def new_project(self, pname, slug='', icon='', ratelimit=0,
                             public=False, paused=True, min_pipeline_version=0):
+        """Create a new project"""
 
         await self.conn.execute("""
         	INSERT INTO projects (name, slug, icon_uri, ratelimit,
@@ -21,6 +23,7 @@ class Database:
 
     async def queue_item(self, project, item,
                         expected_duration=datetime.timedelta(days=1), priority=1):
+        """Add items to a project's queue"""
 
         await self.conn.execute("""
         	INSERT INTO items (project, item, status, expected_duration, priority)
@@ -28,6 +31,8 @@ class Database:
         """, project, str(item), expected_duration, priority)
 
     async def get_item(self, project, username, script_version):
+        """Gets an available item to give to a warrior"""
+
         async with self.conn.transaction():
             item = dict(await self.conn.fetchrow("""
                 SELECT * FROM items WHERE status = 'should_handout'
@@ -50,6 +55,8 @@ class Database:
         return (item['item'], item['id'])
 
     async def heartbeat(self, id):
+        """Tells the server the warrior is still working on an item"""
+
         await self.conn.execute("""
             UPDATE handouts
             SET last_heartbeat = now()
@@ -57,6 +64,8 @@ class Database:
         """, id)
 
     async def set_handout_status(self, id, status):
+        """Changes an item's status"""
+
         async with self.conn.transaction():
             if status == 'abandoned':
                 await self.conn.execute("""
@@ -80,6 +89,8 @@ class Database:
 
 
     async def count_items(self, project, status):
+        """Returns the number of items with a particular status"""
+
         record = await self.conn.fetchrow("""
             SELECT COUNT(*) FROM items
             WHERE project = $1 AND status = $2;
@@ -88,12 +99,15 @@ class Database:
         return int(record[0])
 
     async def create_account(self, username, hash):
+        """Creates an admin account"""
+
         await self.conn.execute("""
             INSERT INTO accounts (username, password_hash)
             VALUES($1, $2);
         """, username, hash)
 
     async def get_hash(self, username):
+        """Gets an admin's password hash"""
         record = await self.conn.fetchrow("""
             SELECT password_hash FROM accounts
             WHERE username = $1;
@@ -102,6 +116,8 @@ class Database:
         return str(record[0])
 
     async def change_password(self, username, newpass):
+        """Change an admin's password"""
+
         await self.conn.execute("""
             UPDATE accounts
             SET password_hash = $1
@@ -109,6 +125,8 @@ class Database:
         """, newpass, username)
 
     async def delete_account(self, username):
+        """Deletes an admin account"""
+
         await self.conn.execute("""
             DELETE FROM accounts
             WHERE username = $1;
