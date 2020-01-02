@@ -88,30 +88,41 @@ class Database:
         return int(record[0])
 
 async def async_test():
+    """Very ugly test to use while getting this working"""
+    print('Connecting to db')
+
     db = Database()
 
     await db.connect(user='postgres', password='12345',
                 database='tracker', host='localhost')
 
+    print('testing db.new_project')
+
     await db.new_project('test')
+
+    print('testing db.queue_item')
 
     for i in range(1000):
         await db.queue_item('test', i)
 
     out_items = []
 
+    print('testing db.get_item')
+
     for i in range(250):
         item = await db.get_item('test', 'LowLevel_M', 'testver')
         out_items.append(item)
 
-    print(await db.count_items('test', 'handed_out'))
-    time.sleep(5)
+    print('testing db.count_items')
 
+    print(await db.count_items('test', 'handed_out'))
+
+    print('testing db.heartbeat')
     for i in out_items:
         if random.randrange(5) == 3:
             await db.heartbeat(i[1])
 
-    time.sleep(5)
+    print('testing db.set_handout_status')
 
     for i in out_items:
         await db.set_handout_status(i[1], 'succeeded')
