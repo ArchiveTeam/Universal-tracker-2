@@ -191,5 +191,6 @@ async def async_test():
     print('testing db.delete_account')
     await db.delete_account('LowLevel_M')
 
-
-asyncio.run(async_test())
+if __name__ == '__main__':
+    # Only run test if code is not imported
+    asyncio.run(async_test())
