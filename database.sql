@@ -44,5 +44,5 @@ CREATE TABLE sessions (
     user_for varchar references accounts(username),
     session_name varchar,
     token varchar PRIMARY KEY,
-    expire int
+    expire timestamptz
 );
