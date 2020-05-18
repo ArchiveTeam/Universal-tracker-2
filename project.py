@@ -51,19 +51,21 @@ class Project:
     def saveproject(self):
         """Save project files every 30 seconds"""
 
-        if not self.status['paused']: # Make sure project is not paused
+        try:
+            if not self.status['paused']: # Make sure project is not paused
 
-            # Write parsed file back to disk. This
-            # file will be loaded first upon startup.
-            with open(os.path.join(self.items_folder, '.queue-save.txt'), 'w') as f:
-                f.write(self.items.dumpfile())
+                # Write parsed file back to disk. This
+                # file will be loaded first upon startup.
+                with open(os.path.join(self.items_folder, '.queue-save.txt'), 'w') as f:
+                    f.write(self.items.dumpfile())
 
-            # Save leaderboard
-            with open(os.path.join('projects', f"{self.meta['name']}-leaderboard.json"), 'w') as ljf:
-                ljf.write(self.leaderboard.get_leaderboard())
+                # Save leaderboard
+                with open(os.path.join('projects', f"{self.meta['name']}-leaderboard.json"), 'w') as ljf:
+                    ljf.write(self.leaderboard.get_leaderboard())
 
-        # Reset timer
-        Timer(30, self.saveproject).start()
+        finally:
+            # Reset timer
+            Timer(30, self.saveproject).start()
 
     def update_config_file(self):
         """Write changed config back to the config file"""
