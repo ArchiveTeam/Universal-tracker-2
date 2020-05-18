@@ -64,8 +64,8 @@ async def heartbeat(request, project):
         if heartbeat_stat == 'IpDoesNotMatch':
             return response.json({'error': 'IpDoesNotMatch'}, status=403)
 
-        elif heartbeat_stat == 'InvalidID':
-            return response.json({'error': 'InvalidID'}, status=404)
+        elif heartbeat_stat == 'InvalidItem':
+            return response.json({'error': 'InvalidItem'}, status=404)
 
         else:
             # Respond with the output from item_manager
@@ -93,8 +93,8 @@ async def finish_item(request, project):
         if done_stat == 'IpDoesNotMatch':
             return response.json({'error': 'IpDoesNotMatch'}, status=403)
 
-        elif done_stat == 'InvalidID':
-            return response.json({'error': 'InvalidID'}, status=404)
+        elif done_stat == 'InvalidItem':
+            return response.json({'error': 'InvalidItem'}, status=404)
 
         else:
             # Respond with the output from item_manager

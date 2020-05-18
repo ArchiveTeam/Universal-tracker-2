@@ -100,13 +100,13 @@ class Project:
         else:
             return "ProjectNotActive"
 
-    def heartbeat(self, id, ip):
-        return self.items.heartbeat(id, ip)
+    def heartbeat(self, item_name, ip):
+        return self.items.heartbeat(item_name, ip)
 
-    def finish_item(self, id, itemsize, ip):
-        done_stat = self.items.finishitem(id, ip)
+    def finish_item(self, item_name, itemsize, ip):
+        done_stat = self.items.finishitem(item_name, ip)
 
-        if done_stat not in ['IpDoesNotMatch', 'InvalidID']:
+        if done_stat not in ['IpDoesNotMatch', 'InvalidItem']:
             # Add item to downloader's leaderboard entry
             self.leaderboard.additem(done_stat[1], itemsize)
 
