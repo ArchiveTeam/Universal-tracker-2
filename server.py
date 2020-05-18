@@ -13,12 +13,12 @@ config = toml.load('config.toml')
 
 app = Sanic()
 
-@app.route('<project>/item/get')
-async def get_item(request, project):
+@app.post('<project>/request')
+async def request(request, project):
     """API endpoint for requesting an item"""
 
     try:
-        username = request.args['username'][0] # Get username
+        username = request.json['downloader'] # Get username
 
         # Make sure username is under 24 characters and only contains
         # a-b, A-B, 0-9, and underscore.
@@ -45,20 +45,20 @@ async def get_item(request, project):
     except KeyError: # Project not found
         return response.json({'error': 'InvalidProject'}, status=404)
 
-@app.route('<project>/item/heartbeat')
+@app.post('<project>/heartbeat')
 async def heartbeat(request, project):
     """API endpoint for heartbeat"""
 
     try:
-        id = request.args['id'] # Get item ID
+        item_name = request.json['item'] # Get item
 
     except KeyError:
         return response.json({'error': 'InvalidParams'}, status=400)
 
     try:
         # Tell project's item_manager to set heartbeat
-        print(request.args['id'][0], request.ip)
-        heartbeat_stat = projects[project].heartbeat(request.args['id'][0], request.ip)
+        print(item_name, request.ip)
+        heartbeat_stat = projects[project].heartbeat(item_name, request.ip)
 
         # If there is an error setting heartbeat
         if heartbeat_stat == 'IpDoesNotMatch':
@@ -74,20 +74,20 @@ async def heartbeat(request, project):
     except KeyError: # Project not found
         return response.json({'error': 'InvalidProject'}, status=404)
 
-@app.route('<project>/item/done')
-async def finish_item(request, project):
+@app.post('<project>/done')
+async def done(request, project):
     """API endpoint for finishing an item"""
 
     try:
-        id = request.args['id'][0] # Get item ID
-        itemsize = int(request.args['size'][0]) # Get item size
+        item_name = request.json['item'] # Get item
+        itemsize = int(sum(request.json['bytes'].values())) # Get item size
 
     except (KeyError, ValueError):
         return response.json({'error': 'InvalidParams'}, status=400)
 
     try:
         # Tell item_manager to finish item
-        done_stat = projects[project].finish_item(id, itemsize, request.ip)
+        done_stat = projects[project].finish_item(item_name, itemsize, request.ip)
 
         # If there is an error finishing item
         if done_stat == 'IpDoesNotMatch':
@@ -96,9 +96,12 @@ async def finish_item(request, project):
         elif done_stat == 'InvalidItem':
             return response.json({'error': 'InvalidItem'}, status=404)
 
-        else:
+        elif done_stat == 'Success':
             # Respond with the output from item_manager
-            return response.json({'status': str(done_stat)})
+            return response.text('OK')
+        
+        else:
+            return response.json({'error': str(done_stat)}, status=400)
 
     except KeyError: # Project not found
         return response.json({'error': 'InvalidProject'}, status=404)
