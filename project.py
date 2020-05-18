@@ -33,7 +33,10 @@ class Project:
         self.item_files.sort()
 
         if not self.status['paused']: # If not paused
-            self.queue_next_items() # Load items into queue
+            try:
+                self.queue_next_items() # Load items into queue
+            except IndexError:
+                print('Project has no items.')
 
         # Check if there is a leaderboard json file
 
@@ -75,30 +78,29 @@ class Project:
 
     def queue_next_items(self):
         """Get next items file, and load it into queue"""
-        try:
-            # Get file from list, and remove it from the list.
-            items_file = os.path.join('projects', self.meta['items-folder'],
-                                            self.item_files.pop(0))
-            self.items.loadfile(items_file) # Queue items
 
-            print(f'Added {items_file.split(os.sep)[-1]} to the queue.')
+        # Get file from list, and remove it from the list.
+        items_file = os.path.join('projects', self.meta['items-folder'],
+                                        self.item_files.pop(0))
+        self.items.loadfile(items_file) # Queue items
 
-        except IndexError:
-            pass
+        print(f'Added {items_file.split(os.sep)[-1]} to the queue.')
 
         # Remove the text file so it will not load again
         os.remove(items_file)
 
     # Wrappers for varius tasks
     def get_item(self, username, ip):
+        if self.status['paused']: # Check if project is paused
+            return 'ProjectNotActive'
+
         if len(self.items.queue_items) == 0: # Check if queue is empty
-            self.queue_next_items()
+            try:
+                self.queue_next_items()
+            except IndexError:
+                return 'NoItemsLeft'
 
-        if not self.status['paused']: # Check if project is not paused
-            return self.items.getitem(username, ip)
-
-        else:
-            return "ProjectNotActive"
+        return self.items.getitem(username, ip)
 
     def heartbeat(self, item_name, ip):
         return self.items.heartbeat(item_name, ip)
