@@ -2,6 +2,7 @@ from threading import Timer
 import json
 import os
 
+from exceptions import *
 import item_manager
 import leaderboard
 
@@ -94,13 +95,13 @@ class Project:
     # Wrappers for varius tasks
     def get_item(self, username, ip):
         if self.status['paused']: # Check if project is paused
-            return 'ProjectNotActive'
+            raise ProjectNotActiveException()
 
         if len(self.items.queue_items) == 0: # Check if queue is empty
             try:
                 self.queue_next_items()
             except IndexError:
-                return 'NoItemsLeft'
+                raise NoItemsLeftException()
 
         return self.items.getitem(username, ip)
 
@@ -108,16 +109,10 @@ class Project:
         return self.items.heartbeat(item_name, ip)
 
     def finish_item(self, item_name, itemsize, ip):
-        done_stat = self.items.finishitem(item_name, ip)
+        username = self.items.finishitem(item_name, ip)
 
-        if done_stat not in ['IpDoesNotMatch', 'InvalidItem']:
-            # Add item to downloader's leaderboard entry
-            self.leaderboard.additem(done_stat[1], itemsize)
-
-            return done_stat[0]
-
-        else:
-            return done_stat
+        # Add item to downloader's leaderboard entry
+        self.leaderboard.additem(username, itemsize)
 
     def get_leaderboard(self):
         return self.leaderboard.get_leaderboard()

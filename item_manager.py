@@ -1,6 +1,8 @@
 import time
 import json
 
+from exceptions import *
+
 class Items:
     """Manage and keep track of items"""
 
@@ -39,56 +41,49 @@ class Items:
         try:
             # Get first item from queue_items
             item_name = self.queue_items.pop(0)
-
-            # Add item to inprogress_items
-            item = {
-                'username': username, # Log username
-                'ip': ip, # Log ip
-                'times': {
-                    'starttime': int(time.time()), # Log start time
-                }
-            }
-            self.inprogress_items[item_name] = item
-
-            print(f'giving item {item_name} to {username}')
-
-            # Return json of item
-            return {'item_name': item_name}
-
         except ValueError: # No items left
-            return 'NoItemsLeft'
+            raise NoItemsLeftException()
+
+        # Add item to inprogress_items
+        item = {
+            'username': username, # Log username
+            'ip': ip, # Log ip
+            'times': {
+                'starttime': int(time.time()), # Log start time
+            }
+        }
+        self.inprogress_items[item_name] = item
+
+        print(f'giving item {item_name} to {username}')
+
+        # Return json of item
+        return {'item_name': item_name}
 
     def heartbeat(self, item_name, ip):
         """Logs heartbeat for item"""
         try:
             item = self.inprogress_items[item_name] # Get item from inprogress_items
-
-            if item['ip'] == ip: # Check if ip is the same as requester
-                # Set item heartbeat to now
-                self.inprogress_items[item_name]['times']['heartbeat'] = int(time.time())
-
-                return 'Success'
-
-            else:
-                return 'IpDoesNotMatch'
-
         except KeyError:
-            return 'InvalidItem'
+            raise InvalidItemException()
+
+        if item['ip'] != ip: # Check if ip does not match requester
+            raise IpDoesNotMatchException()
+
+        # Set item heartbeat to now
+        self.inprogress_items[item_name]['times']['heartbeat'] = int(time.time())
 
     def finishitem(self, item_name, ip):
         """Removes item from inprogress_items"""
         try:
             item = self.inprogress_items[item_name] # Get item from inprogress_items
-
-            if item['ip'] == ip: # Check if ip is the same as requester
-                self.inprogress_items.pop(item_name) # remove item from inprogress_items
-                self.done_items += 1 # Keep track of total number of items finished
-
-                print(f"{item['username']} finished {item_name}")
-                return ('Success', item['username'])
-
-            else:
-                return 'IpDoesNotMatch'
-
         except KeyError:
-            return 'InvalidItem'
+            raise InvalidItemException()
+
+        if item['ip'] != ip: # Check if ip does not match requester
+            raise IpDoesNotMatchException()
+
+        self.inprogress_items.pop(item_name) # remove item from inprogress_items
+        self.done_items += 1 # Keep track of total number of items finished
+
+        print(f"{item['username']} finished {item_name}")
+        return item['username']

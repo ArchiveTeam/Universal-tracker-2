@@ -6,6 +6,7 @@ from sanic import Sanic
 from sanic import response
 import toml
 
+from exceptions import *
 import project
 import auth
 
@@ -13,110 +14,97 @@ config = toml.load('config.toml')
 
 app = Sanic()
 
-@app.post('<project>/request')
-async def request(request, project):
+@app.post('<project_name>/request')
+async def request(request, project_name):
     """API endpoint for requesting an item"""
 
     try:
         username = request.json['downloader'] # Get username
-
-        # Make sure username is under 24 characters and only contains
-        # a-b, A-B, 0-9, and underscore.
-        if not re.match('^\w{3,24}$', username):
-            return response.json({'error': 'InvalidUsername'}, status=400)
-
     except KeyError:
         return response.json({'error': 'InvalidParams'}, status=400)
 
+    # Make sure username is under 24 characters and only contains
+    # a-b, A-B, 0-9, and underscore.
+    if not re.match('^\w{3,24}$', username):
+        return response.json({'error': 'InvalidUsername'}, status=400)
+
     try:
-        # Get item from the project's item_manager
-        item = projects[project].get_item(username, request.ip)
-
-        if item == 'NoItemsLeft':
-            return response.json({'error': 'NoItemsLeft'}, status=404)
-
-        elif item == 'ProjectNotActive':
-            return response.json({'error': 'ProjectNotActive'}, status=404)
-
-        else:
-            # Respond with the output from item_manager
-            return response.json(item, escape_forward_slashes=False)
-
+        project = projects[project_name]
     except KeyError: # Project not found
         return response.json({'error': 'InvalidProject'}, status=404)
 
-@app.post('<project>/heartbeat')
-async def heartbeat(request, project):
+    try:
+        # Get item from the project's item_manager
+        item = project.get_item(username, request.ip)
+    except ProjectNotActiveException:
+        return response.json({'error': 'ProjectNotActive'}, status=404)
+    except NoItemsLeftException:
+        return response.json({'error': 'NoItemsLeft'}, status=404)
+
+    # Respond with the output from item_manager
+    return response.json(item, escape_forward_slashes=False)
+
+@app.post('<project_name>/heartbeat')
+async def heartbeat(request, project_name):
     """API endpoint for heartbeat"""
 
     try:
         item_name = request.json['item'] # Get item
-
     except KeyError:
         return response.json({'error': 'InvalidParams'}, status=400)
 
     try:
-        # Tell project's item_manager to set heartbeat
-        print(item_name, request.ip)
-        heartbeat_stat = projects[project].heartbeat(item_name, request.ip)
-
-        # If there is an error setting heartbeat
-        if heartbeat_stat == 'IpDoesNotMatch':
-            return response.json({'error': 'IpDoesNotMatch'}, status=403)
-
-        elif heartbeat_stat == 'InvalidItem':
-            return response.json({'error': 'InvalidItem'}, status=404)
-
-        else:
-            # Respond with the output from item_manager
-            return response.json({'status': str(heartbeat_stat)})
-
+        project = projects[project_name]
     except KeyError: # Project not found
         return response.json({'error': 'InvalidProject'}, status=404)
 
-@app.post('<project>/done')
-async def done(request, project):
+    try:
+        # Tell project's item_manager to set heartbeat
+        print(item_name, request.ip)
+        project.heartbeat(item_name, request.ip)
+    except InvalidItemException:
+        return response.json({'error': 'InvalidItem'}, status=404)
+    except IpDoesNotMatchException:
+        return response.json({'error': 'IpDoesNotMatch'}, status=403)
+
+    return response.json({'status': 'Success'})
+
+@app.post('<project_name>/done')
+async def done(request, project_name):
     """API endpoint for finishing an item"""
 
     try:
         item_name = request.json['item'] # Get item
         itemsize = int(sum(request.json['bytes'].values())) # Get item size
-
     except (KeyError, ValueError):
         return response.json({'error': 'InvalidParams'}, status=400)
 
     try:
-        # Tell item_manager to finish item
-        done_stat = projects[project].finish_item(item_name, itemsize, request.ip)
-
-        # If there is an error finishing item
-        if done_stat == 'IpDoesNotMatch':
-            return response.json({'error': 'IpDoesNotMatch'}, status=403)
-
-        elif done_stat == 'InvalidItem':
-            return response.json({'error': 'InvalidItem'}, status=404)
-
-        elif done_stat == 'Success':
-            # Respond with the output from item_manager
-            return response.text('OK')
-        
-        else:
-            return response.json({'error': str(done_stat)}, status=400)
-
+        project = projects[project_name]
     except KeyError: # Project not found
         return response.json({'error': 'InvalidProject'}, status=404)
 
-@app.route('<project>/api/leaderboard')
-async def get_leaderboard(request, project):
+    try:
+        # Tell item_manager to finish item
+        project.finish_item(item_name, itemsize, request.ip)
+    except InvalidItemException:
+        return response.json({'error': 'InvalidItem'}, status=404)
+    except IpDoesNotMatchException:
+        return response.json({'error': 'IpDoesNotMatch'}, status=403)
+
+    return response.text('OK')
+
+@app.route('<project_name>/api/leaderboard')
+async def get_leaderboard(request, project_name):
     """API endpoint for getting the leaderboard"""
 
     try:
-        # Return the leaderboard
-        return response.json(projects[project].get_leaderboard())
-
+        project = projects[project_name]
     except KeyError: # Project not found
         return response.json({'error': 'InvalidProject'}, status=404)
 
+    # Return the leaderboard
+    return response.json(project.get_leaderboard())
 
 projects = {} # Dictionary of project objects
 
