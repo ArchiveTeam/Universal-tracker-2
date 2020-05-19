@@ -26,8 +26,14 @@ class Leaderboard:
 
         return self.usernames
 
-    def loadfile(filepath):
+    def loadfile(self, filepath):
         """Get leaderboard stats from save file"""
 
-        with open(filepath, 'r') as ljf:
-            self.usernames = json.loads(ljf.read)
+        with open(filepath, 'r') as f:
+            self.usernames = json.load(f)
+
+    def savefile(self, filepath):
+        """Save leaderboard stats to file"""
+
+        with open(filepath, 'w') as f:
+            json.dump(self.usernames, f)

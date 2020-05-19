@@ -40,12 +40,10 @@ class Project:
                 print('Project has no items.')
 
         # Check if there is a leaderboard json file
-
-        leaderboard_json_file = os.path.join('projects', f"{self.meta['name']}-leaderboard.json")
-
-        if os.path.isdir(leaderboard_json_file):
+        self.leaderboard_json_file = os.path.join('projects', f"{self.meta['name']}-leaderboard.json")
+        if os.path.isfile(self.leaderboard_json_file):
             # Load leaderboard stats from file
-            self.leaderboard.loadfile(leaderboard_json_file)
+            self.leaderboard.loadfile(self.leaderboard_json_file)
 
         Timer(30, self.saveproject).start() # Start saving project every 30s
 
@@ -61,8 +59,7 @@ class Project:
                     f.write(self.items.dumpfile())
 
                 # Save leaderboard
-                with open(os.path.join('projects', f"{self.meta['name']}-leaderboard.json"), 'w') as ljf:
-                    ljf.write(self.leaderboard.get_leaderboard())
+                self.leaderboard.savefile(self.leaderboard_json_file)
 
         finally:
             # Reset timer
