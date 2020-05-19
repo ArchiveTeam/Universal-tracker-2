@@ -52,11 +52,9 @@ class Project:
 
         try:
             if not self.status['paused']: # Make sure project is not paused
-
                 # Write parsed file back to disk. This
                 # file will be loaded first upon startup.
-                with open(os.path.join(self.items_folder, '.queue-save.txt'), 'w') as f:
-                    f.write(self.items.dumpfile())
+                self.items.savefile(os.path.join(self.items_folder, '.queue-save.txt'))
 
                 # Save leaderboard
                 self.leaderboard.savefile(self.leaderboard_json_file)
@@ -80,8 +78,7 @@ class Project:
         """Get next items file, and load it into queue"""
 
         # Get file from list, and remove it from the list.
-        items_file = os.path.join('projects', self.meta['items-folder'],
-                                        self.item_files.pop(0))
+        items_file = os.path.join(self.items_folder, self.item_files.pop(0))
         self.items.loadfile(items_file) # Queue items
 
         print(f'Added {items_file.split(os.sep)[-1]} to the queue.')

@@ -26,14 +26,15 @@ class Items:
                     # Create item
                     self.queue_items.append(line)
 
-    def dumpfile(self):
+    def savefile(self, filepath):
         """Save the current queue"""
 
         items = []
         items.extend(self.queue_items)
         items.extend(self.inprogress_items.keys())
 
-        return '\n'.join(items) + '\n'
+        with open(filepath, 'w') as f:
+            f.write('\n'.join(items) + '\n')
 
     def getitem(self, username, ip):
         """Gets an item, and moves it to inprogress_items"""
