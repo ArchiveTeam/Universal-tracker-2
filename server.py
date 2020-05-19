@@ -25,7 +25,7 @@ async def request(request, project_name):
 
     # Make sure username is under 24 characters and only contains
     # a-b, A-B, 0-9, and underscore.
-    if not re.match('^\w{3,24}$', username):
+    if not re.match(r'^\w{3,24}$', username):
         return response.json({'error': 'InvalidUsername'}, status=400)
 
     try:
