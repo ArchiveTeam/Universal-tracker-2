@@ -13,7 +13,7 @@ import auth
 with open('config.yml', 'r') as f:
     config = yaml.safe_load(f)
 
-app = Sanic()
+app = Sanic(name='universal-tracker-2')
 
 @app.post('<project_name>/request')
 async def request(request, project_name):
