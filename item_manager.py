@@ -55,8 +55,6 @@ class Items:
         }
         self.inprogress_items[item_name] = item
 
-        print(f'giving item {item_name} to {username}')
-
         # Return json of item
         return {'item_name': item_name}
 
@@ -86,5 +84,4 @@ class Items:
         self.inprogress_items.pop(item_name) # remove item from inprogress_items
         self.done_items += 1 # Keep track of total number of items finished
 
-        print(f"{item['username']} finished {item_name}")
         return item['username']

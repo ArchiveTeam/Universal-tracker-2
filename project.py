@@ -37,7 +37,7 @@ class Project:
             try:
                 self.queue_next_items() # Load items into queue
             except IndexError:
-                print('Project has no items.')
+                print(f"[{self.meta['name']}] Project has no items")
 
         # Check if there is a leaderboard json file
         self.leaderboard_json_file = os.path.join('projects', f"{self.meta['name']}-leaderboard.json")
@@ -81,7 +81,7 @@ class Project:
         items_file = os.path.join(self.items_folder, self.item_files.pop(0))
         self.items.loadfile(items_file) # Queue items
 
-        print(f'Added {items_file.split(os.sep)[-1]} to the queue.')
+        print(f"[{self.meta['name']}] Added {items_file.split(os.sep)[-1]} to the queue")
 
         # Remove the text file so it will not load again
         os.remove(items_file)
@@ -97,13 +97,19 @@ class Project:
             except IndexError:
                 raise NoItemsLeftException()
 
-        return self.items.getitem(username, ip)
+        item_name = self.items.getitem(username, ip)
+
+        print(f"[{self.meta['name']}] {username} got item {item_name}")
+
+        return item_name
 
     def heartbeat(self, item_name, ip):
         return self.items.heartbeat(item_name, ip)
 
     def finish_item(self, item_name, itemsize, ip):
         username = self.items.finishitem(item_name, ip)
+
+        print(f"[{self.meta['name']}] {username} finished item {item_name}")
 
         # Add item to downloader's leaderboard entry
         self.leaderboard.additem(username, itemsize)
