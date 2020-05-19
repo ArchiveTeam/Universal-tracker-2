@@ -6,12 +6,13 @@ import re
 from passlib.hash import argon2
 from itsdangerous import Signer
 from itsdangerous.exc import BadSignature
-import toml
+import yaml
 
 
 class Auth:
     def __init__(self):
-        self.config = toml.load('config.toml')
+        with open('config.yml', 'r') as f:
+            self.config = yaml.safe_load(f)
 
         try:
             with open('admins.json', 'r') as jf:

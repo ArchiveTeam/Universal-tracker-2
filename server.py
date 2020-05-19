@@ -4,13 +4,14 @@ import re
 
 from sanic import Sanic
 from sanic import response
-import toml
+import yaml
 
 from exceptions import *
 import project
 import auth
 
-config = toml.load('config.toml')
+with open('config.yml', 'r') as f:
+    config = yaml.safe_load(f)
 
 app = Sanic()
 
