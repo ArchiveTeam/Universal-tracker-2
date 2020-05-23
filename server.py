@@ -120,7 +120,8 @@ for p in os.listdir('projects'):
         projects[project_name] = project.Project(os.path.join('projects', p))
 
 if __name__ == "__main__":
-    app.run(host=config['host'], port=config['port'], workers=config['workers'])
+    # WARNING: The current code is not thread-safe. If you care for your data, never set more than a single worker.
+    app.run(host=config['host'], port=config['port'], workers=1)
 
 
 ## TODO: Port admin functions
