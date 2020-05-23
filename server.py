@@ -133,6 +133,18 @@ async def before_server_stop(app, loop):
 
     app.periodic_save_task.cancel()
 
+@app.listener('after_server_stop')
+async def after_server_stop(app, loop):
+    """Save projects on server stop"""
+
+    logger.info("Saving projects")
+
+    for project_name in projects:
+        try:
+            projects[project_name].saveproject()
+        except:
+            logger.exception('Error while saving projects')
+
 projects = {} # Dictionary of project objects
 
 for p in os.listdir('projects'):
