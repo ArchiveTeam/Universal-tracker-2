@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 
 class Leaderboard:
@@ -20,6 +21,9 @@ class Leaderboard:
 
         # Add size of completed item to leaderboard entry
         self.usernames[username]['data'] += itemsize
+
+        # Set last done
+        self.usernames[username]['last_done'] = datetime.utcnow().isoformat()
 
     def get_leaderboard(self):
         """return the entire leaderboard"""
