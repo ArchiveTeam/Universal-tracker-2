@@ -18,7 +18,7 @@ class Leaderboard:
             self.usernames[username]['items'] = 1
             self.usernames[username]['data'] = 0
 
-            # Add size of completed item to leaderboard entry
+        # Add size of completed item to leaderboard entry
         self.usernames[username]['data'] += itemsize
 
     def get_leaderboard(self):
