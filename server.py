@@ -1,9 +1,11 @@
+import asyncio
 import json
 import os
 import re
 
 from sanic import Sanic
 from sanic import response
+from sanic.log import logger
 import yaml
 
 from exceptions import *
@@ -106,6 +108,30 @@ async def get_leaderboard(request, project_name):
 
     # Return the leaderboard
     return response.json(project.get_leaderboard())
+
+async def periodic_save():
+    """Periodic project saving loop"""
+
+    while True:
+        await asyncio.sleep(30)
+
+        for project_name in projects:
+            try:
+                projects[project_name].saveproject()
+            except:
+                logger.exception('Error while periodically saving projects')
+
+@app.listener('after_server_start')
+async def after_server_start(app, loop):
+    """Create periodic project save task after server start"""
+
+    app.periodic_save_task = loop.create_task(periodic_save())
+
+@app.listener('before_server_stop')
+async def before_server_stop(app, loop):
+    """Cancel periodic project save task before server stop"""
+
+    app.periodic_save_task.cancel()
 
 projects = {} # Dictionary of project objects
 

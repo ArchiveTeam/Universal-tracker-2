@@ -1,4 +1,3 @@
-from threading import Timer
 import json
 import os
 
@@ -45,23 +44,16 @@ class Project:
             # Load leaderboard stats from file
             self.leaderboard.loadfile(self.leaderboard_json_file)
 
-        Timer(30, self.saveproject).start() # Start saving project every 30s
-
     def saveproject(self):
-        """Save project files every 30 seconds"""
+        """Save project files"""
 
-        try:
-            if not self.status['paused']: # Make sure project is not paused
-                # Write parsed file back to disk. This
-                # file will be loaded first upon startup.
-                self.items.savefile(os.path.join(self.items_folder, '.queue-save.txt'))
+        if not self.status['paused']: # Make sure project is not paused
+            # Write parsed file back to disk. This
+            # file will be loaded first upon startup.
+            self.items.savefile(os.path.join(self.items_folder, '.queue-save.txt'))
 
-                # Save leaderboard
-                self.leaderboard.savefile(self.leaderboard_json_file)
-
-        finally:
-            # Reset timer
-            Timer(30, self.saveproject).start()
+            # Save leaderboard
+            self.leaderboard.savefile(self.leaderboard_json_file)
 
     def update_config_file(self):
         """Write changed config back to the config file"""
