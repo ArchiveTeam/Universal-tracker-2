@@ -1,7 +1,7 @@
-from threading import Timer
 import json
 import os
 
+from exceptions import *
 import item_manager
 import leaderboard
 
@@ -33,34 +33,27 @@ class Project:
         self.item_files.sort()
 
         if not self.status['paused']: # If not paused
-            self.queue_next_items() # Load items into queue
+            try:
+                self.queue_next_items() # Load items into queue
+            except IndexError:
+                print(f"[{self.meta['name']}] Project has no items")
 
         # Check if there is a leaderboard json file
-
-        leaderboard_json_file = os.path.join('projects', f"{self.meta['name']}-leaderboard.json")
-
-        if os.path.isdir(leaderboard_json_file):
+        self.leaderboard_json_file = os.path.join('projects', f"{self.meta['name']}-leaderboard.json")
+        if os.path.isfile(self.leaderboard_json_file):
             # Load leaderboard stats from file
-            self.leaderboard.loadfile(leaderboard_json_file)
-
-        Timer(30, self.saveproject).start() # Start saving project every 30s
+            self.leaderboard.loadfile(self.leaderboard_json_file)
 
     def saveproject(self):
-        """Save project files every 30 seconds"""
+        """Save project files"""
 
         if not self.status['paused']: # Make sure project is not paused
-
             # Write parsed file back to disk. This
             # file will be loaded first upon startup.
-            with open(os.path.join(self.items_folder, '.queue-save.txt'), 'w') as f:
-                f.write(self.items.dumpfile())
+            self.items.savefile(os.path.join(self.items_folder, '.queue-save.txt'))
 
             # Save leaderboard
-            with open(os.path.join('projects', f"{self.meta['name']}-leaderboard.json"), 'w') as ljf:
-                ljf.write(self.leaderboard.get_leaderboard())
-
-        # Reset timer
-        Timer(30, self.saveproject).start()
+            self.leaderboard.savefile(self.leaderboard_json_file)
 
     def update_config_file(self):
         """Write changed config back to the config file"""
@@ -75,45 +68,43 @@ class Project:
 
     def queue_next_items(self):
         """Get next items file, and load it into queue"""
-        try:
-            # Get file from list, and remove it from the list.
-            items_file = os.path.join('projects', self.meta['items-folder'],
-                                            self.item_files.pop(0))
-            self.items.loadfile(items_file) # Queue items
 
-            print(f'Added {items_file.split(os.sep)[-1]} to the queue.')
+        # Get file from list, and remove it from the list.
+        items_file = os.path.join(self.items_folder, self.item_files.pop(0))
+        self.items.loadfile(items_file) # Queue items
 
-        except IndexError:
-            pass
+        print(f"[{self.meta['name']}] Added {items_file.split(os.sep)[-1]} to the queue")
 
         # Remove the text file so it will not load again
         os.remove(items_file)
 
     # Wrappers for varius tasks
     def get_item(self, username, ip):
+        if self.status['paused']: # Check if project is paused
+            raise ProjectNotActiveException()
+
         if len(self.items.queue_items) == 0: # Check if queue is empty
-            self.queue_next_items()
+            try:
+                self.queue_next_items()
+            except IndexError:
+                raise NoItemsLeftException()
 
-        if not self.status['paused']: # Check if project is not paused
-            return self.items.getitem(username, ip)
+        item_name = self.items.getitem(username, ip)
 
-        else:
-            return "ProjectNotActive"
+        print(f"[{self.meta['name']}] {username} got item {item_name}")
 
-    def heartbeat(self, id, ip):
-        return self.items.heartbeat(id, ip)
+        return item_name
 
-    def finish_item(self, id, itemsize, ip):
-        done_stat = self.items.finishitem(id, ip)
+    def heartbeat(self, item_name, ip):
+        return self.items.heartbeat(item_name, ip)
 
-        if done_stat not in ['IpDoesNotMatch', 'InvalidID']:
-            # Add item to downloader's leaderboard entry
-            self.leaderboard.additem(done_stat[1], itemsize)
+    def finish_item(self, item_name, itemsize, ip):
+        username = self.items.finishitem(item_name, ip)
 
-            return done_stat[0]
+        print(f"[{self.meta['name']}] {username} finished item {item_name}")
 
-        else:
-            return done_stat
+        # Add item to downloader's leaderboard entry
+        self.leaderboard.additem(username, itemsize)
 
     def get_leaderboard(self):
         return self.leaderboard.get_leaderboard()

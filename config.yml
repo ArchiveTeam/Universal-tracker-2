@@ -1,0 +1,9 @@
+# Server
+host: '0.0.0.0'
+port: 8000
+
+# Auth
+argon2_rounds: 50
+
+secret_key: 'CHANGEME' # Secret key for signing session cookie
+session_expire: 30 # How many days session cookies will be valid for

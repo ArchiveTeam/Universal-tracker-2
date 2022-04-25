@@ -1,119 +1,149 @@
+import asyncio
 import json
 import os
 import re
 
 from sanic import Sanic
 from sanic import response
-import toml
+from sanic.log import logger
+import yaml
 
+from exceptions import *
 import project
 import auth
 
-config = toml.load('config.toml')
+with open('config.yml', 'r') as f:
+    config = yaml.safe_load(f)
 
-app = Sanic()
+app = Sanic(name='universal-tracker-2')
 
-@app.route('<project>/item/get')
-async def get_item(request, project):
+@app.post('<project_name>/request')
+async def request(request, project_name):
     """API endpoint for requesting an item"""
 
     try:
-        username = request.args['username'][0] # Get username
-
-        # Make sure username is under 24 characters and only contains
-        # a-b, A-B, 0-9, and underscore.
-        if not re.match('^\w{3,24}$', username):
-            return response.json({'error': 'InvalidUsername'}, status=400)
-
+        username = request.json['downloader'] # Get username
     except KeyError:
         return response.json({'error': 'InvalidParams'}, status=400)
+
+    # Make sure username is under 24 characters and only contains
+    # a-b, A-B, 0-9, and underscore.
+    if not re.match(r'^\w{3,24}$', username):
+        return response.json({'error': 'InvalidUsername'}, status=400)
+
+    try:
+        project = projects[project_name]
+    except KeyError: # Project not found
+        return response.json({'error': 'InvalidProject'}, status=404)
 
     try:
         # Get item from the project's item_manager
-        item = projects[project].get_item(username, request.ip)
+        item = project.get_item(username, request.ip)
+    except ProjectNotActiveException:
+        return response.json({'error': 'ProjectNotActive'}, status=404)
+    except NoItemsLeftException:
+        return response.json({'error': 'NoItemsLeft'}, status=404)
 
-        if item == 'NoItemsLeft':
-            return response.json({'error': 'NoItemsLeft'}, status=404)
+    # Respond with the output from item_manager
+    return response.json(item, escape_forward_slashes=False)
 
-        elif item == 'ProjectNotActive':
-            return response.json({'error': 'ProjectNotActive'}, status=404)
-
-        else:
-            # Respond with the output from item_manager
-            return response.json(item, escape_forward_slashes=False)
-
-    except KeyError: # Project not found
-        return response.json({'error': 'InvalidProject'}, status=404)
-
-@app.route('<project>/item/heartbeat')
-async def heartbeat(request, project):
+@app.post('<project_name>/heartbeat')
+async def heartbeat(request, project_name):
     """API endpoint for heartbeat"""
 
     try:
-        id = request.args['id'] # Get item ID
-
+        item_name = request.json['item'] # Get item
     except KeyError:
         return response.json({'error': 'InvalidParams'}, status=400)
 
     try:
-        # Tell project's item_manager to set heartbeat
-        print(request.args['id'][0], request.ip)
-        heartbeat_stat = projects[project].heartbeat(request.args['id'][0], request.ip)
-
-        # If there is an error setting heartbeat
-        if heartbeat_stat == 'IpDoesNotMatch':
-            return response.json({'error': 'IpDoesNotMatch'}, status=403)
-
-        elif heartbeat_stat == 'InvalidID':
-            return response.json({'error': 'InvalidID'}, status=404)
-
-        else:
-            # Respond with the output from item_manager
-            return response.json({'status': str(heartbeat_stat)})
-
+        project = projects[project_name]
     except KeyError: # Project not found
         return response.json({'error': 'InvalidProject'}, status=404)
 
-@app.route('<project>/item/done')
-async def finish_item(request, project):
+    try:
+        # Tell project's item_manager to set heartbeat
+        print(item_name, request.ip)
+        project.heartbeat(item_name, request.ip)
+    except InvalidItemException:
+        return response.json({'error': 'InvalidItem'}, status=404)
+    except IpDoesNotMatchException:
+        return response.json({'error': 'IpDoesNotMatch'}, status=403)
+
+    return response.json({'status': 'Success'})
+
+@app.post('<project_name>/done')
+async def done(request, project_name):
     """API endpoint for finishing an item"""
 
     try:
-        id = request.args['id'][0] # Get item ID
-        itemsize = int(request.args['size'][0]) # Get item size
-
+        item_name = request.json['item'] # Get item
+        itemsize = int(sum(request.json['bytes'].values())) # Get item size
     except (KeyError, ValueError):
         return response.json({'error': 'InvalidParams'}, status=400)
 
     try:
-        # Tell item_manager to finish item
-        done_stat = projects[project].finish_item(id, itemsize, request.ip)
-
-        # If there is an error finishing item
-        if done_stat == 'IpDoesNotMatch':
-            return response.json({'error': 'IpDoesNotMatch'}, status=403)
-
-        elif done_stat == 'InvalidID':
-            return response.json({'error': 'InvalidID'}, status=404)
-
-        else:
-            # Respond with the output from item_manager
-            return response.json({'status': str(done_stat)})
-
+        project = projects[project_name]
     except KeyError: # Project not found
         return response.json({'error': 'InvalidProject'}, status=404)
 
-@app.route('<project>/api/leaderboard')
-async def get_leaderboard(request, project):
+    try:
+        # Tell item_manager to finish item
+        project.finish_item(item_name, itemsize, request.ip)
+    except InvalidItemException:
+        return response.json({'error': 'InvalidItem'}, status=404)
+    except IpDoesNotMatchException:
+        return response.json({'error': 'IpDoesNotMatch'}, status=403)
+
+    return response.text('OK')
+
+@app.route('<project_name>/api/leaderboard')
+async def get_leaderboard(request, project_name):
     """API endpoint for getting the leaderboard"""
 
     try:
-        # Return the leaderboard
-        return response.json(projects[project].get_leaderboard())
-
+        project = projects[project_name]
     except KeyError: # Project not found
         return response.json({'error': 'InvalidProject'}, status=404)
 
+    # Return the leaderboard
+    return response.json(project.get_leaderboard())
+
+async def periodic_save():
+    """Periodic project saving loop"""
+
+    while True:
+        await asyncio.sleep(30)
+
+        for project_name in projects:
+            try:
+                projects[project_name].saveproject()
+            except:
+                logger.exception('Error while periodically saving projects')
+
+@app.listener('after_server_start')
+async def after_server_start(app, loop):
+    """Create periodic project save task after server start"""
+
+    app.periodic_save_task = loop.create_task(periodic_save())
+
+@app.listener('before_server_stop')
+async def before_server_stop(app, loop):
+    """Cancel periodic project save task before server stop"""
+
+    app.periodic_save_task.cancel()
+
+@app.listener('after_server_stop')
+async def after_server_stop(app, loop):
+    """Save projects on server stop"""
+
+    logger.info("Saving projects")
+
+    for project_name in projects:
+        try:
+            projects[project_name].saveproject()
+        except:
+            logger.exception('Error while saving projects')
 
 projects = {} # Dictionary of project objects
 
@@ -128,7 +158,8 @@ for p in os.listdir('projects'):
         projects[project_name] = project.Project(os.path.join('projects', p))
 
 if __name__ == "__main__":
-    app.run(host=config['host'], port=config['port'], workers=config['workers'])
+    # WARNING: The current code is not thread-safe. If you care for your data, never set more than a single worker.
+    app.run(host=config['host'], port=config['port'], workers=1)
 
 
 ## TODO: Port admin functions

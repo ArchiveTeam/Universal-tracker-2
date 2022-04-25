@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 
 class Leaderboard:
@@ -18,16 +19,25 @@ class Leaderboard:
             self.usernames[username]['items'] = 1
             self.usernames[username]['data'] = 0
 
-            # Add size of completed item to leaderboard entry
+        # Add size of completed item to leaderboard entry
         self.usernames[username]['data'] += itemsize
+
+        # Set last done
+        self.usernames[username]['last_done'] = datetime.utcnow().isoformat()
 
     def get_leaderboard(self):
         """return the entire leaderboard"""
 
         return self.usernames
 
-    def loadfile(filepath):
+    def loadfile(self, filepath):
         """Get leaderboard stats from save file"""
 
-        with open(filepath, 'r') as ljf:
-            self.usernames = json.loads(ljf.read)
+        with open(filepath, 'r') as f:
+            self.usernames = json.load(f)
+
+    def savefile(self, filepath):
+        """Save leaderboard stats to file"""
+
+        with open(filepath, 'w') as f:
+            json.dump(self.usernames, f)
